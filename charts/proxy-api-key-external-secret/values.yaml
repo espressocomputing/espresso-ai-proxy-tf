@@ -1,0 +1,13 @@
+secretStore:
+  name: ""
+  awsRegion: ""
+  serviceAccountName: ""
+  serviceAccountNamespace: ""
+
+externalSecret:
+  name: "proxy-api-key"
+  namespace: "proxy"
+  refreshInterval: "1h"
+  targetSecretName: "espresso-api"
+  targetSecretKey: "ESPRESSO_AI_API_KEY"
+  awsSecretName: ""

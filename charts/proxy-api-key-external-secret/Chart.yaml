@@ -1,0 +1,6 @@
+apiVersion: v2
+name: proxy-api-key-external-secret
+description: External Secrets resources for proxy API key sync from AWS Secrets Manager
+type: application
+version: 0.1.0
+appVersion: "1.0"
