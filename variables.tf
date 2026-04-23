@@ -190,8 +190,14 @@ variable "karpenter_config" {
     capacity_types = optional(list(string), ["on-demand"])
     cpu_limit      = optional(string, "64")
     memory_limit   = optional(string, "256Gi")
+    node_cap       = optional(number, 10)
   })
   default = {}
+
+  validation {
+    condition     = try(var.karpenter_config.node_cap, 10) > 0
+    error_message = "karpenter_config.node_cap must be greater than 0."
+  }
 }
 
 variable "proxy_config" {

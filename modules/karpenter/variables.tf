@@ -53,6 +53,12 @@ variable "memory_limit" {
   default     = "256Gi"
 }
 
+variable "node_cap" {
+  description = "Maximum number of nodes Karpenter may provision in the node pool."
+  type        = number
+  default     = 10
+}
+
 variable "tags" {
   description = "Tags applied to AWS resources."
   type        = map(string)

@@ -27,6 +27,7 @@ spec:
 {{ toYaml .Values.instanceTypes | indent 12 }}
 {{- end }}
   limits:
+    nodes: {{ .Values.nodeCap }}
     cpu: {{ .Values.cpuLimit | quote }}
     memory: {{ .Values.memoryLimit | quote }}
   disruption:
