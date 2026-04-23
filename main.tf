@@ -143,6 +143,7 @@ module "karpenter" {
   capacity_types                    = var.karpenter_config.capacity_types
   cpu_limit                         = var.karpenter_config.cpu_limit
   memory_limit                      = var.karpenter_config.memory_limit
+  node_cap                          = var.karpenter_config.node_cap
   tags                              = local.resource_tags
 
   depends_on = [

@@ -126,6 +126,7 @@ resource "helm_release" "karpenter_resources" {
       instanceTypes     = var.instance_types
       cpuLimit          = var.cpu_limit
       memoryLimit       = var.memory_limit
+      nodeCap           = var.node_cap
       tags = merge(var.tags, {
         (local.discovery_tag_key) = local.discovery_tag_value
       })
