@@ -353,6 +353,7 @@ module "proxy" {
   proxy_api_key_secret_name = var.proxy_config.api_key_secret_name
   proxy_env = merge(
     local.enforced_tags,
+    var.proxy_config.env_vars,
     {
       PROXY_HOST                  = var.proxy_config.proxy_host
       OTEL_EXPORTER_OTLP_ENDPOINT = var.proxy_config.otel_exporter_otlp_endpoint
