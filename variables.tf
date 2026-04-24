@@ -211,6 +211,7 @@ variable "proxy_config" {
     api_key_secret_mode         = optional(string, "BYO_K8S_SECRET")
     api_key_aws_secret_name     = optional(string, "/espresso-ai/proxy/api-key")
     api_url                     = optional(string, "https://api.espressocomputing.com:25831")
+    env_vars                    = optional(map(string), {})
   })
 
   validation {
@@ -248,6 +249,13 @@ variable "proxy_config" {
   validation {
     condition     = trim(var.proxy_config.otel_exporter_otlp_endpoint, " ") != ""
     error_message = "proxy_config.otel_exporter_otlp_endpoint must be non-empty."
+  }
+
+  validation {
+    condition = alltrue([
+      for key in keys(var.proxy_config.env_vars) : trim(key, " ") != ""
+    ])
+    error_message = "proxy_config.env_vars keys must be non-empty."
   }
 }
 
