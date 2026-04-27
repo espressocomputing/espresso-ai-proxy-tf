@@ -28,6 +28,11 @@ output "aks_oidc_issuer_url" {
   value       = module.aks.oidc_issuer_url
 }
 
+output "aks_kubelet_identity_object_id" {
+  description = "Object ID of the AKS kubelet identity. Use as the principal_id when granting AcrPull on a container registry."
+  value       = module.aks.kubelet_identity_object_id
+}
+
 output "proxy_namespace" {
   description = "Namespace where proxy is deployed"
   value       = module.proxy.proxy_namespace

@@ -104,7 +104,7 @@ variable "aks_config" {
   description = "AKS cluster and node pool configuration"
   type = object({
     cluster_name                  = optional(string, "espresso-ai-proxy")
-    kubernetes_version            = optional(string, "1.31")
+    kubernetes_version            = optional(string, "1.35")
     api_server_authorized_ranges  = optional(list(string), [])
     enable_private_cluster        = optional(bool, false)
     pod_cidr                      = optional(string, "10.244.0.0/16")
