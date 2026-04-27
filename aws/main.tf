@@ -274,7 +274,7 @@ resource "helm_release" "proxy_api_key_external_secret" {
   count = local.managed_api_key_secret_enabled ? 1 : 0
 
   name      = "proxy-api-key-external-secret"
-  chart     = abspath("${path.module}/charts/proxy-api-key-external-secret")
+  chart     = abspath("${path.module}/../charts/proxy-api-key-external-secret")
   namespace = kubernetes_namespace.external_secrets[0].metadata[0].name
   timeout   = 1200
 
@@ -344,7 +344,7 @@ resource "time_sleep" "wait_for_proxy_api_key_sync" {
 }
 
 module "proxy" {
-  source = "./modules/proxy"
+  source = "../modules/proxy"
 
   region                    = var.region
   proxy_image               = var.proxy_config.image

@@ -20,8 +20,10 @@ jobs:
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
 
-      - name: Terraform Init (no backend)
+      - name: Terraform Init (no backend) — aws
+        working-directory: aws
         run: terraform init -backend=false
 
-      - name: Terraform Validate
+      - name: Terraform Validate — aws
+        working-directory: aws
         run: terraform validate
