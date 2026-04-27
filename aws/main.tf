@@ -279,12 +279,17 @@ resource "helm_release" "proxy_api_key_external_secret" {
   timeout   = 1200
 
   set {
+    name  = "secretStore.provider"
+    value = "aws"
+  }
+
+  set {
     name  = "secretStore.name"
     value = "${local.name_prefix}-aws-secrets-manager"
   }
 
   set {
-    name  = "secretStore.awsRegion"
+    name  = "secretStore.aws.region"
     value = var.region
   }
 
@@ -324,8 +329,13 @@ resource "helm_release" "proxy_api_key_external_secret" {
   }
 
   set {
-    name  = "externalSecret.awsSecretName"
+    name  = "externalSecret.remoteKey"
     value = var.proxy_config.api_key_aws_secret_name
+  }
+
+  set {
+    name  = "externalSecret.remoteProperty"
+    value = "ESPRESSO_AI_API_KEY"
   }
 
   depends_on = [
@@ -346,7 +356,6 @@ resource "time_sleep" "wait_for_proxy_api_key_sync" {
 module "proxy" {
   source = "../modules/proxy"
 
-  region                    = var.region
   proxy_image               = var.proxy_config.image
   proxy_replicas            = var.proxy_config.replicas
   proxy_port                = 5050
@@ -360,11 +369,6 @@ module "proxy" {
       API_URL                     = "${var.proxy_config.api_url}/${var.customer}"
     }
   )
-  enable_alb_ingress      = var.alb_config.enable_ingress
-  alb_certificate_arn     = var.alb_config.certificate_arn
-  proxy_ingress_host      = var.alb_config.ingress_host
-  alb_scheme              = var.alb_config.scheme
-  alb_ingress_annotations = {}
 
   enable_proxy_autoscaling                 = true
   proxy_autoscaling_min_replicas           = var.autoscaling_config.min_replicas
@@ -380,12 +384,39 @@ module "proxy" {
   ]
 }
 
+module "alb_ingress" {
+  source = "./modules/alb-ingress"
+
+  enabled                = var.alb_config.enable_ingress
+  region                 = var.region
+  namespace              = module.proxy.proxy_namespace
+  service_name           = module.proxy.proxy_service_name
+  service_port           = module.proxy.proxy_service_port
+  certificate_arn        = var.alb_config.certificate_arn
+  ingress_host           = var.alb_config.ingress_host
+  scheme                 = var.alb_config.scheme
+  additional_annotations = {}
+
+  depends_on = [
+    module.proxy,
+    time_sleep.wait_for_aws_load_balancer_controller_webhook,
+  ]
+}
+
+# Existing deployments had this ingress at module.proxy.kubernetes_ingress_v1.this
+# before the cloud-agnostic refactor. The moved block tells Terraform to track
+# the relocation instead of destroying and recreating the ALB.
+moved {
+  from = module.proxy.kubernetes_ingress_v1.this
+  to   = module.alb_ingress.kubernetes_ingress_v1.this
+}
+
 locals {
   proxy_dns_target = (
-    module.proxy.proxy_ingress_load_balancer_hostname != null
-  ) ? module.proxy.proxy_ingress_load_balancer_hostname : module.proxy.proxy_service_load_balancer_hostname
+    module.alb_ingress.load_balancer_hostname != null
+  ) ? module.alb_ingress.load_balancer_hostname : module.proxy.proxy_service_load_balancer_hostname
   proxy_dns_alias_name    = local.proxy_dns_target
-  proxy_dns_alias_zone_id = module.proxy.proxy_ingress_load_balancer_zone_id
+  proxy_dns_alias_zone_id = module.alb_ingress.load_balancer_zone_id
 
   proxy_dns_name = var.dns_config.record_name != null ? var.dns_config.record_name : var.alb_config.ingress_host
 }

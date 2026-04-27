@@ -45,7 +45,7 @@ output "proxy_service_load_balancer_hostname" {
 
 output "proxy_ingress_load_balancer_hostname" {
   description = "ALB hostname for proxy ingress, when enabled"
-  value       = module.proxy.proxy_ingress_load_balancer_hostname
+  value       = module.alb_ingress.load_balancer_hostname
 }
 
 output "proxy_hpa_name" {

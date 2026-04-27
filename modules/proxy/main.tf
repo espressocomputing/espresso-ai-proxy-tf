@@ -2,11 +2,6 @@ locals {
   proxy_namespace = "proxy"
 }
 
-data "aws_lb_hosted_zone_id" "ingress" {
-  region             = var.region
-  load_balancer_type = "application"
-}
-
 resource "kubernetes_deployment_v1" "this" {
   metadata {
     name      = "proxy"
@@ -124,78 +119,6 @@ resource "kubernetes_service_v1" "this" {
     }
 
     type = "ClusterIP"
-  }
-}
-
-resource "kubernetes_ingress_v1" "this" {
-  count = var.enable_alb_ingress ? 1 : 0
-
-  wait_for_load_balancer = true
-
-  metadata {
-    name      = "proxy"
-    namespace = local.proxy_namespace
-    annotations = merge(
-      {
-        "alb.ingress.kubernetes.io/scheme"           = var.alb_scheme
-        "alb.ingress.kubernetes.io/target-type"      = "ip"
-        "alb.ingress.kubernetes.io/certificate-arn"  = var.alb_certificate_arn
-        "alb.ingress.kubernetes.io/listen-ports"     = "[{\"HTTPS\":443}]"
-        "alb.ingress.kubernetes.io/ssl-redirect"     = "443"
-        "alb.ingress.kubernetes.io/healthcheck-path" = "/healthcheck"
-      },
-      var.alb_ingress_annotations
-    )
-  }
-
-  spec {
-    ingress_class_name = "alb"
-
-    dynamic "rule" {
-      for_each = var.proxy_ingress_host == null ? [] : [var.proxy_ingress_host]
-      content {
-        host = rule.value
-        http {
-          path {
-            path      = "/"
-            path_type = "Prefix"
-            backend {
-              service {
-                name = kubernetes_service_v1.this.metadata[0].name
-                port {
-                  number = var.proxy_port
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    dynamic "rule" {
-      for_each = var.proxy_ingress_host == null ? [1] : []
-      content {
-        http {
-          path {
-            path      = "/"
-            path_type = "Prefix"
-            backend {
-              service {
-                name = kubernetes_service_v1.this.metadata[0].name
-                port {
-                  number = var.proxy_port
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  timeouts {
-    create = "30m"
-    delete = "30m"
   }
 }
 
