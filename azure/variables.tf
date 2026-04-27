@@ -103,18 +103,18 @@ variable "existing_vnet_config" {
 variable "aks_config" {
   description = "AKS cluster and node pool configuration"
   type = object({
-    cluster_name                  = optional(string, "espresso-ai-proxy")
-    kubernetes_version            = optional(string, "1.35")
-    api_server_authorized_ranges  = optional(list(string), [])
-    enable_private_cluster        = optional(bool, false)
-    pod_cidr                      = optional(string, "10.244.0.0/16")
-    service_cidr                  = optional(string, "10.245.0.0/16")
-    dns_service_ip                = optional(string, "10.245.0.10")
-    vm_size                       = optional(string, "Standard_D8s_v5")
-    node_pool_min_count           = optional(number, 2)
-    node_pool_max_count           = optional(number, 10)
-    log_analytics_retention_days  = optional(number, 90)
-    enable_log_analytics          = optional(bool, false)
+    cluster_name                 = optional(string, "espresso-ai-proxy")
+    kubernetes_version           = optional(string, "1.35")
+    api_server_authorized_ranges = optional(list(string), [])
+    enable_private_cluster       = optional(bool, false)
+    pod_cidr                     = optional(string, "10.244.0.0/16")
+    service_cidr                 = optional(string, "10.245.0.0/16")
+    dns_service_ip               = optional(string, "10.245.0.10")
+    vm_size                      = optional(string, "Standard_D8s_v5")
+    node_pool_min_count          = optional(number, 2)
+    node_pool_max_count          = optional(number, 10)
+    log_analytics_retention_days = optional(number, 90)
+    enable_log_analytics         = optional(bool, false)
   })
   default = {}
 
@@ -142,15 +142,15 @@ variable "aks_config" {
 variable "proxy_config" {
   description = "Proxy application runtime configuration"
   type = object({
-    image                            = string
-    replicas                         = optional(number, 2)
-    proxy_host                       = string
-    otel_exporter_otlp_endpoint      = optional(string, "https://metrics.espressocomputing.com:443")
-    api_key_secret_name              = optional(string, "espresso-ai")
-    api_key_secret_mode              = optional(string, "BYO_K8S_SECRET")
-    api_key_azure_key_vault_secret   = optional(string, "espresso-ai-proxy-api-key")
-    api_url                          = optional(string, "https://api.espressocomputing.com:25831")
-    env_vars                         = optional(map(string), {})
+    image                          = string
+    replicas                       = optional(number, 2)
+    proxy_host                     = string
+    otel_exporter_otlp_endpoint    = optional(string, "https://metrics.espressocomputing.com:443")
+    api_key_secret_name            = optional(string, "espresso-ai")
+    api_key_secret_mode            = optional(string, "BYO_K8S_SECRET")
+    api_key_azure_key_vault_secret = optional(string, "espresso-ai-proxy-api-key")
+    api_url                        = optional(string, "https://api.espressocomputing.com:25831")
+    env_vars                       = optional(map(string), {})
   })
 
   validation {

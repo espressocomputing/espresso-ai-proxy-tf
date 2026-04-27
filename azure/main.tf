@@ -152,7 +152,7 @@ resource "kubernetes_namespace" "proxy" {
 resource "azurerm_public_ip" "ingress" {
   count = var.ingress_config.enable_ingress ? 1 : 0
 
-  name                = local.ingress_public_ip_name
+  name = local.ingress_public_ip_name
   # Place the PIP in the AKS node resource group so the cluster's managed
   # identity can attach it to the LB without extra role assignments.
   resource_group_name = module.aks.node_resource_group
