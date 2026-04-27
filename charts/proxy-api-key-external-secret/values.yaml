@@ -1,8 +1,18 @@
 secretStore:
+  # provider must be one of: aws, azure
+  provider: ""
   name: ""
-  awsRegion: ""
   serviceAccountName: ""
   serviceAccountNamespace: ""
+
+  # AWS provider settings (used when provider == aws)
+  aws:
+    region: ""
+
+  # Azure provider settings (used when provider == azure)
+  azure:
+    keyVaultUrl: ""
+    tenantId: ""
 
 externalSecret:
   name: "proxy-api-key"
@@ -10,4 +20,12 @@ externalSecret:
   refreshInterval: "1h"
   targetSecretName: "espresso-api"
   targetSecretKey: "ESPRESSO_AI_API_KEY"
-  awsSecretName: ""
+
+  # Remote-secret identifier in the chosen provider.
+  # AWS: the Secrets Manager secret name (e.g. "/espresso-ai/proxy/api-key").
+  # Azure: the Key Vault secret name (e.g. "espresso-ai-proxy-api-key").
+  remoteKey: ""
+
+  # AWS-only: optional JSON property to extract from the secret value.
+  # Leave empty for Azure (Key Vault secrets store flat values).
+  remoteProperty: ""
