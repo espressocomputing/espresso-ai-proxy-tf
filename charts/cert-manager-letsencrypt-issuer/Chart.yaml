@@ -1,0 +1,6 @@
+apiVersion: v2
+name: cert-manager-letsencrypt-issuer
+description: cert-manager ClusterIssuer for ACME / Let's Encrypt with HTTP-01 solver via an ingress class.
+type: application
+version: 0.1.0
+appVersion: "1.0"

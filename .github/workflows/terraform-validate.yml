@@ -27,3 +27,11 @@ jobs:
       - name: Terraform Validate — aws
         working-directory: aws
         run: terraform validate
+
+      - name: Terraform Init (no backend) — azure
+        working-directory: azure
+        run: terraform init -backend=false
+
+      - name: Terraform Validate — azure
+        working-directory: azure
+        run: terraform validate

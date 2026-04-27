@@ -1,0 +1,14 @@
+issuer:
+  # Name of the ClusterIssuer resource. Referenced by the Ingress's
+  # cert-manager.io/cluster-issuer annotation.
+  name: "letsencrypt-prod"
+
+  # Contact email for Let's Encrypt — required.
+  email: ""
+
+  # ACME server. Override to https://acme-staging-v02.api.letsencrypt.org/directory
+  # during testing to avoid the production rate limits.
+  server: "https://acme-v02.api.letsencrypt.org/directory"
+
+  # Ingress class used to solve HTTP-01 challenges.
+  ingressClass: "nginx"
