@@ -198,10 +198,13 @@ resource "helm_release" "ingress_nginx" {
   }
 
   # Keep the controller scoped to standard cloud LBs and avoid PROXY-protocol
-  # surprises that some Azure LB configurations cause.
+  # surprises that some Azure LB configurations cause. controller.config
+  # renders into a ConfigMap whose data values must be strings; force the type
+  # so Helm doesn't auto-coerce "true" to a bool.
   set {
     name  = "controller.config.use-forwarded-headers"
     value = "true"
+    type  = "string"
   }
 
   depends_on = [
@@ -433,10 +436,13 @@ resource "helm_release" "external_secrets" {
   }
 
   # Workload Identity needs the controller pods to be labeled so the webhook
-  # injects the projected token volume.
+  # injects the projected token volume. type=string is required: without it,
+  # Helm's set block auto-coerces "true" to a bool and Kubernetes rejects the
+  # Deployment because pod-label values must be strings.
   set {
     name  = "podLabels.azure\\.workload\\.identity/use"
     value = "true"
+    type  = "string"
   }
 
   depends_on = [
