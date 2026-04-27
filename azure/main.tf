@@ -481,10 +481,10 @@ resource "helm_release" "proxy_api_key_external_secret" {
     value = azurerm_key_vault.proxy_api_key[0].vault_uri
   }
 
-  set {
-    name  = "secretStore.azure.tenantId"
-    value = data.azurerm_client_config.current.tenant_id
-  }
+  # tenantId is intentionally NOT set: when authType=WorkloadIdentity is used
+  # with serviceAccountRef, ESO derives the tenant from the SA's
+  # azure.workload.identity/tenant-id annotation. Setting it here too triggers
+  # ESO's "multiple tenantID found" validation guard.
 
   set {
     name  = "secretStore.serviceAccountName"
