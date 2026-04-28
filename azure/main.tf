@@ -210,6 +210,18 @@ resource "helm_release" "ingress_nginx" {
     type  = "string"
   }
 
+  # Azure LB HTTP/HTTPS probes only consider HTTP 200 as healthy. nginx-ingress
+  # returns 404 for `GET /` when no Ingress matches (and 308 for healthcheck
+  # paths because of ssl-redirect). Both fail the probe and the LB marks the
+  # backend unhealthy. TCP probes only check that the TCP connection succeeds,
+  # which is sufficient — the workload's actual health is reflected in whether
+  # nginx is up at all, not in the response body of an arbitrary path.
+  set {
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-health-probe-protocol"
+    value = "tcp"
+    type  = "string"
+  }
+
   # Keep the controller scoped to standard cloud LBs and avoid PROXY-protocol
   # surprises that some Azure LB configurations cause. controller.config
   # renders into a ConfigMap whose data values must be strings; force the type
