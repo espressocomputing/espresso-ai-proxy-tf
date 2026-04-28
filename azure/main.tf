@@ -757,3 +757,38 @@ module "proxy_dns_record" {
   ttl                      = var.dns_config.ttl
   tags                     = local.resource_tags
 }
+
+# ---------------------------------------------------------------------------
+# Optional: Azure Front Door in front of the AKS LB.
+#
+# When ingress_config.front_door.enabled is true, AFD becomes the customer-
+# facing endpoint and terminates TLS using a managed cert (DigiCert, with
+# working OCSP). AFD forwards traffic to the AKS LB as origin, preserving
+# the original Host header so the proxy's subdomain-based account routing
+# keeps working. The LE cert on the AKS LB is no longer customer-facing —
+# only AFD sees it, and AFD doesn't enforce strict OCSP for origins.
+#
+# Customer-side DNS work after this provisions:
+#   1. CNAME <ingress_host>          → <front_door_endpoint_hostname>
+#   2. TXT   _dnsauth.<ingress_host> → <front_door_custom_domain_validation_token>
+# Both values are exposed as outputs of this module.
+# ---------------------------------------------------------------------------
+
+module "front_door" {
+  count = try(var.ingress_config.front_door.enabled, false) ? 1 : 0
+
+  source = "./modules/front-door"
+
+  name_prefix         = local.name_prefix
+  resource_group_name = local.resource_group_name
+  sku_name            = try(var.ingress_config.front_door.sku_name, "Standard_AzureFrontDoor")
+  custom_domain_host  = var.ingress_config.ingress_host
+  origin_host         = azurerm_public_ip.ingress[0].ip_address
+  health_probe_path   = "/healthcheck"
+  tags                = local.resource_tags
+
+  depends_on = [
+    azurerm_public_ip.ingress,
+    helm_release.ingress_nginx,
+  ]
+}

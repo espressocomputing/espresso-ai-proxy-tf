@@ -219,16 +219,30 @@ variable "ingress_config" {
     enable_ingress = optional(bool, true)
     ingress_host   = optional(string)
 
-    # TLS provisioning — choose ONE of:
+    # TLS provisioning on the AKS LB — choose ONE of:
     #   * letsencrypt_email: install cert-manager and auto-issue/renew the cert
     #     via Let's Encrypt HTTP-01. Default path; "just works" for any
     #     publicly-reachable cluster.
     #   * tls_secret_name: bring your own kubernetes.io/tls secret in the proxy
     #     namespace (e.g. synced from a Key Vault cert via the Secrets Store
     #     CSI driver, or managed by cert-manager outside this module).
+    #
+    # When front_door.enabled is true, the LE cert is no longer customer-facing
+    # — it only secures the AFD-to-AKS-LB hop, and AFD presents its own
+    # DigiCert-issued cert (which has working OCSP) to clients.
     letsencrypt_email       = optional(string)
     use_letsencrypt_staging = optional(bool, false)
     tls_secret_name         = optional(string)
+
+    # Optional Azure Front Door fronting. When enabled, AFD terminates TLS for
+    # clients with a DigiCert-issued managed cert (which has working OCSP),
+    # and forwards traffic to the AKS LB as origin. Required when fronting
+    # clients with strict OCSP behavior (e.g. Snowflake's connector) since
+    # Let's Encrypt has phased out OCSP.
+    front_door = optional(object({
+      enabled  = optional(bool, false)
+      sku_name = optional(string, "Standard_AzureFrontDoor")
+    }), {})
   })
   default = {}
 
