@@ -10,5 +10,21 @@ issuer:
   # during testing to avoid the production rate limits.
   server: "https://acme-v02.api.letsencrypt.org/directory"
 
-  # Ingress class used to solve HTTP-01 challenges.
+  # HTTP-01 solver settings (used when dns01.enabled is false).
+  # HTTP-01 cannot issue wildcard certs.
   ingressClass: "nginx"
+
+  # DNS-01 solver settings. When dns01.enabled is true, the ClusterIssuer uses
+  # DNS-01 instead of HTTP-01 — required for wildcard certs.
+  dns01:
+    enabled: false
+    route53:
+      region: "us-east-1"
+      # Optional: when set, cert-manager skips a ListHostedZonesByName call.
+      hostedZoneID: ""
+      # AWS access key ID is non-sensitive; the secret-access-key is fetched
+      # from a Kubernetes Secret referenced below.
+      accessKeyID: ""
+      secretAccessKeySecretRef:
+        name: ""
+        key: "secret-access-key"

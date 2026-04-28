@@ -1,6 +1,14 @@
 {{- if not .Values.issuer.email -}}
 {{- fail "issuer.email is required" -}}
 {{- end -}}
+{{- if .Values.issuer.dns01.enabled -}}
+{{- if not .Values.issuer.dns01.route53.accessKeyID -}}
+{{- fail "issuer.dns01.route53.accessKeyID is required when issuer.dns01.enabled is true" -}}
+{{- end -}}
+{{- if not .Values.issuer.dns01.route53.secretAccessKeySecretRef.name -}}
+{{- fail "issuer.dns01.route53.secretAccessKeySecretRef.name is required when issuer.dns01.enabled is true" -}}
+{{- end -}}
+{{- end -}}
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
@@ -12,6 +20,19 @@ spec:
     privateKeySecretRef:
       name: {{ printf "%s-account-key" .Values.issuer.name | quote }}
     solvers:
+      {{- if .Values.issuer.dns01.enabled }}
+      - dns01:
+          route53:
+            region: {{ .Values.issuer.dns01.route53.region | quote }}
+            {{- if .Values.issuer.dns01.route53.hostedZoneID }}
+            hostedZoneID: {{ .Values.issuer.dns01.route53.hostedZoneID | quote }}
+            {{- end }}
+            accessKeyID: {{ .Values.issuer.dns01.route53.accessKeyID | quote }}
+            secretAccessKeySecretRef:
+              name: {{ .Values.issuer.dns01.route53.secretAccessKeySecretRef.name | quote }}
+              key:  {{ .Values.issuer.dns01.route53.secretAccessKeySecretRef.key | quote }}
+      {{- else }}
       - http01:
           ingress:
             class: {{ .Values.issuer.ingressClass | quote }}
+      {{- end }}

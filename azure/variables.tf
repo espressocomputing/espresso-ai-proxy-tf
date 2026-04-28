@@ -314,6 +314,43 @@ variable "autoscaling_config" {
   }
 }
 
+variable "letsencrypt_dns01_route53" {
+  description = <<-EOT
+    Optional Route53 DNS-01 solver configuration for cert-manager. When set,
+    cert-manager uses DNS-01 (which supports wildcard certs) instead of HTTP-01.
+    Required when ingress_config.ingress_host is a wildcard (e.g.
+    `*.example.com`), since Let's Encrypt only issues wildcards via DNS-01.
+
+    The IAM principal whose access key you provide needs:
+      route53:ChangeResourceRecordSets   on the hosted zone
+      route53:ListResourceRecordSets     on the hosted zone
+      route53:GetChange                  on arn:aws:route53:::change/*
+
+    `hosted_zone_id` is optional but recommended — when omitted cert-manager
+    will list zones to discover the right one, which adds latency and requires
+    `route53:ListHostedZonesByName`.
+  EOT
+  type = object({
+    aws_access_key_id     = string
+    aws_secret_access_key = string
+    hosted_zone_id        = optional(string)
+    region                = optional(string, "us-east-1")
+  })
+  default   = null
+  sensitive = true
+
+  validation {
+    condition = (
+      var.letsencrypt_dns01_route53 == null ||
+      (
+        trim(var.letsencrypt_dns01_route53.aws_access_key_id, " ") != "" &&
+        trim(var.letsencrypt_dns01_route53.aws_secret_access_key, " ") != ""
+      )
+    )
+    error_message = "letsencrypt_dns01_route53.aws_access_key_id and aws_secret_access_key must be non-empty when the object is provided."
+  }
+}
+
 variable "tags" {
   description = "Additional tags applied to Azure resources"
   type        = map(string)

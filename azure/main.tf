@@ -43,8 +43,16 @@ locals {
     try(var.ingress_config.tls_secret_name, null) != null &&
     trim(try(var.ingress_config.tls_secret_name, ""), " ") != ""
   )
+  # When letsencrypt_dns01_route53 is supplied, cert-manager uses DNS-01
+  # instead of HTTP-01. Required for wildcard ingress hosts.
+  use_letsencrypt_dns01 = (
+    local.use_letsencrypt &&
+    var.letsencrypt_dns01_route53 != null
+  )
 
-  cluster_issuer_name = "letsencrypt-prod"
+  cluster_issuer_name           = "letsencrypt-prod"
+  cert_manager_route53_secret   = "route53-aws-credentials"
+  cert_manager_route53_key_name = "secret-access-key"
 
   # Name of the kubernetes.io/tls secret the Ingress consumes. In LE mode
   # cert-manager provisions and rotates this secret automatically; in BYO mode
@@ -307,6 +315,27 @@ resource "time_sleep" "wait_for_cert_manager_crds" {
   create_duration = "60s"
 }
 
+# AWS credentials for cert-manager's Route53 DNS-01 solver. Only created when
+# DNS-01 is enabled. The access key ID is non-sensitive and goes directly into
+# the ClusterIssuer spec; the secret-access-key lives in this Kubernetes secret
+# and is referenced from the spec via secretAccessKeySecretRef.
+resource "kubernetes_secret_v1" "cert_manager_route53" {
+  count = local.use_letsencrypt_dns01 ? 1 : 0
+
+  metadata {
+    name      = local.cert_manager_route53_secret
+    namespace = kubernetes_namespace.cert_manager[0].metadata[0].name
+  }
+
+  type = "Opaque"
+
+  data = {
+    (local.cert_manager_route53_key_name) = var.letsencrypt_dns01_route53.aws_secret_access_key
+  }
+
+  depends_on = [helm_release.cert_manager]
+}
+
 resource "helm_release" "letsencrypt_issuer" {
   count = local.use_letsencrypt ? 1 : 0
 
@@ -339,7 +368,49 @@ resource "helm_release" "letsencrypt_issuer" {
     value = "nginx"
   }
 
-  depends_on = [time_sleep.wait_for_cert_manager_crds]
+  # DNS-01 (Route53) solver — engaged when letsencrypt_dns01_route53 is
+  # supplied. Required for wildcard ingress hosts.
+  set {
+    name  = "issuer.dns01.enabled"
+    value = local.use_letsencrypt_dns01 ? "true" : "false"
+  }
+  set {
+    name  = "issuer.dns01.route53.region"
+    value = local.use_letsencrypt_dns01 ? var.letsencrypt_dns01_route53.region : ""
+  }
+  set {
+    name  = "issuer.dns01.route53.hostedZoneID"
+    value = local.use_letsencrypt_dns01 ? coalesce(var.letsencrypt_dns01_route53.hosted_zone_id, "") : ""
+  }
+  set {
+    name  = "issuer.dns01.route53.accessKeyID"
+    value = local.use_letsencrypt_dns01 ? var.letsencrypt_dns01_route53.aws_access_key_id : ""
+  }
+  set {
+    name  = "issuer.dns01.route53.secretAccessKeySecretRef.name"
+    value = local.use_letsencrypt_dns01 ? local.cert_manager_route53_secret : ""
+  }
+  set {
+    name  = "issuer.dns01.route53.secretAccessKeySecretRef.key"
+    value = local.use_letsencrypt_dns01 ? local.cert_manager_route53_key_name : ""
+  }
+
+  lifecycle {
+    precondition {
+      condition = (
+        !var.ingress_config.enable_ingress ||
+        try(var.ingress_config.letsencrypt_email, null) == null ||
+        !startswith(try(var.ingress_config.ingress_host, ""), "*.") ||
+        var.letsencrypt_dns01_route53 != null
+      )
+      error_message = "Wildcard ingress_host (e.g. *.example.com) requires letsencrypt_dns01_route53 to be set, because Let's Encrypt only issues wildcard certs via DNS-01."
+    }
+  }
+
+  depends_on = [
+    time_sleep.wait_for_cert_manager_crds,
+    kubernetes_secret_v1.cert_manager_route53,
+  ]
 }
 
 # ---------------------------------------------------------------------------
