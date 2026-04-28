@@ -197,6 +197,19 @@ resource "helm_release" "ingress_nginx" {
     value = azurerm_public_ip.ingress[0].name
   }
 
+  # AKS Standard LB defaults to enableFloatingIP=true (DSR), which delivers
+  # packets to the node with the LB's destination IP and original port and
+  # relies on kube-proxy iptables to DNAT to the pod. That handoff is
+  # fragile in some configurations and produces silent timeouts. Disabling
+  # floating IP forces traditional NAT (frontendPort → nodePort), which is
+  # well-understood and works reliably. type=string is required because the
+  # annotation value must be a literal "true"/"false" string.
+  set {
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-disable-load-balancer-floating-ip"
+    value = "true"
+    type  = "string"
+  }
+
   # Keep the controller scoped to standard cloud LBs and avoid PROXY-protocol
   # surprises that some Azure LB configurations cause. controller.config
   # renders into a ConfigMap whose data values must be strings; force the type
