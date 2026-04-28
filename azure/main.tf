@@ -216,8 +216,22 @@ resource "helm_release" "ingress_nginx" {
   # backend unhealthy. TCP probes only check that the TCP connection succeeds,
   # which is sufficient — the workload's actual health is reflected in whether
   # nginx is up at all, not in the response body of an arbitrary path.
+  #
+  # cloud-provider-azure honors the per-port annotation reliably across AKS
+  # versions; the global annotation form is sometimes ignored. Setting both to
+  # be safe.
   set {
     name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-health-probe-protocol"
+    value = "tcp"
+    type  = "string"
+  }
+  set {
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/port_80_health-probe_protocol"
+    value = "tcp"
+    type  = "string"
+  }
+  set {
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/port_443_health-probe_protocol"
     value = "tcp"
     type  = "string"
   }
