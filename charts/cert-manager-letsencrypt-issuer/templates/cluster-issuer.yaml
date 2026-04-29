@@ -2,11 +2,17 @@
 {{- fail "issuer.email is required" -}}
 {{- end -}}
 {{- if .Values.issuer.dns01.enabled -}}
-{{- if not .Values.issuer.dns01.route53.accessKeyID -}}
-{{- fail "issuer.dns01.route53.accessKeyID is required when issuer.dns01.enabled is true" -}}
+{{- if not .Values.issuer.dns01.azureDNS.subscriptionID -}}
+{{- fail "issuer.dns01.azureDNS.subscriptionID is required when issuer.dns01.enabled is true" -}}
 {{- end -}}
-{{- if not .Values.issuer.dns01.route53.secretAccessKeySecretRef.name -}}
-{{- fail "issuer.dns01.route53.secretAccessKeySecretRef.name is required when issuer.dns01.enabled is true" -}}
+{{- if not .Values.issuer.dns01.azureDNS.resourceGroupName -}}
+{{- fail "issuer.dns01.azureDNS.resourceGroupName is required when issuer.dns01.enabled is true" -}}
+{{- end -}}
+{{- if not .Values.issuer.dns01.azureDNS.hostedZoneName -}}
+{{- fail "issuer.dns01.azureDNS.hostedZoneName is required when issuer.dns01.enabled is true" -}}
+{{- end -}}
+{{- if not .Values.issuer.dns01.azureDNS.managedIdentityClientID -}}
+{{- fail "issuer.dns01.azureDNS.managedIdentityClientID is required when issuer.dns01.enabled is true" -}}
 {{- end -}}
 {{- end -}}
 apiVersion: cert-manager.io/v1
@@ -22,15 +28,13 @@ spec:
     solvers:
       {{- if .Values.issuer.dns01.enabled }}
       - dns01:
-          route53:
-            region: {{ .Values.issuer.dns01.route53.region | quote }}
-            {{- if .Values.issuer.dns01.route53.hostedZoneID }}
-            hostedZoneID: {{ .Values.issuer.dns01.route53.hostedZoneID | quote }}
-            {{- end }}
-            accessKeyID: {{ .Values.issuer.dns01.route53.accessKeyID | quote }}
-            secretAccessKeySecretRef:
-              name: {{ .Values.issuer.dns01.route53.secretAccessKeySecretRef.name | quote }}
-              key:  {{ .Values.issuer.dns01.route53.secretAccessKeySecretRef.key | quote }}
+          azureDNS:
+            subscriptionID: {{ .Values.issuer.dns01.azureDNS.subscriptionID | quote }}
+            resourceGroupName: {{ .Values.issuer.dns01.azureDNS.resourceGroupName | quote }}
+            hostedZoneName: {{ .Values.issuer.dns01.azureDNS.hostedZoneName | quote }}
+            environment: {{ .Values.issuer.dns01.azureDNS.environment | quote }}
+            managedIdentity:
+              clientID: {{ .Values.issuer.dns01.azureDNS.managedIdentityClientID | quote }}
       {{- else }}
       - http01:
           ingress:

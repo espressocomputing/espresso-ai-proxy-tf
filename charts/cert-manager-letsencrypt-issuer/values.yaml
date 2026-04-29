@@ -15,16 +15,15 @@ issuer:
   ingressClass: "nginx"
 
   # DNS-01 solver settings. When dns01.enabled is true, the ClusterIssuer uses
-  # DNS-01 instead of HTTP-01 — required for wildcard certs.
+  # DNS-01 instead of HTTP-01 — required for wildcard certs. Authentication is
+  # via Azure Workload Identity: cert-manager's controller pod is annotated
+  # with the managed identity's client ID and exchanges its projected SA token
+  # for an Azure AD token at solve time. No static credentials are stored.
   dns01:
     enabled: false
-    route53:
-      region: "us-east-1"
-      # Optional: when set, cert-manager skips a ListHostedZonesByName call.
-      hostedZoneID: ""
-      # AWS access key ID is non-sensitive; the secret-access-key is fetched
-      # from a Kubernetes Secret referenced below.
-      accessKeyID: ""
-      secretAccessKeySecretRef:
-        name: ""
-        key: "secret-access-key"
+    azureDNS:
+      subscriptionID: ""
+      resourceGroupName: ""
+      hostedZoneName: ""
+      environment: "AzurePublicCloud"
+      managedIdentityClientID: ""
