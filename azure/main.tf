@@ -43,16 +43,15 @@ locals {
     try(var.ingress_config.tls_secret_name, null) != null &&
     trim(try(var.ingress_config.tls_secret_name, ""), " ") != ""
   )
-  # When letsencrypt_dns01_route53 is supplied, cert-manager uses DNS-01
+  # When letsencrypt_dns01_azure_dns is supplied, cert-manager uses DNS-01
   # instead of HTTP-01. Required for wildcard ingress hosts.
   use_letsencrypt_dns01 = (
     local.use_letsencrypt &&
-    var.letsencrypt_dns01_route53 != null
+    var.letsencrypt_dns01_azure_dns != null
   )
 
-  cluster_issuer_name           = "letsencrypt-prod"
-  cert_manager_route53_secret   = "route53-aws-credentials"
-  cert_manager_route53_key_name = "secret-access-key"
+  cluster_issuer_name  = "letsencrypt-prod"
+  cert_manager_sa_name = "cert-manager"
 
   # Name of the kubernetes.io/tls secret the Ingress consumes. In LE mode
   # cert-manager provisions and rotates this secret automatically; in BYO mode
@@ -316,6 +315,36 @@ resource "helm_release" "cert_manager" {
     value = "true"
   }
 
+  # Azure Workload Identity wiring for the DNS-01 solver. The controller's SA
+  # gets the client-id annotation and the use=true label so the AAD webhook
+  # injects a projected token. Pods need the matching label so the webhook
+  # selects them. type=string is required because pod label values must be
+  # strings; without it Helm coerces "true" to a bool and apiserver rejects
+  # the Deployment.
+  dynamic "set" {
+    for_each = local.use_letsencrypt_dns01 ? [1] : []
+    content {
+      name  = "serviceAccount.labels.azure\\.workload\\.identity/use"
+      value = "true"
+      type  = "string"
+    }
+  }
+  dynamic "set" {
+    for_each = local.use_letsencrypt_dns01 ? [1] : []
+    content {
+      name  = "serviceAccount.annotations.azure\\.workload\\.identity/client-id"
+      value = module.cert_manager_workload_identity[0].client_id
+    }
+  }
+  dynamic "set" {
+    for_each = local.use_letsencrypt_dns01 ? [1] : []
+    content {
+      name  = "podLabels.azure\\.workload\\.identity/use"
+      value = "true"
+      type  = "string"
+    }
+  }
+
   depends_on = [
     module.aks,
     time_sleep.wait_for_ingress_nginx,
@@ -329,25 +358,44 @@ resource "time_sleep" "wait_for_cert_manager_crds" {
   create_duration = "60s"
 }
 
-# AWS credentials for cert-manager's Route53 DNS-01 solver. Only created when
-# DNS-01 is enabled. The access key ID is non-sensitive and goes directly into
-# the ClusterIssuer spec; the secret-access-key lives in this Kubernetes secret
-# and is referenced from the spec via secretAccessKeySecretRef.
-resource "kubernetes_secret_v1" "cert_manager_route53" {
+# Workload identity that cert-manager uses to write _acme-challenge TXT records
+# into the Azure DNS zone during the DNS-01 challenge. Federated to the
+# cert-manager controller's default service account; granted DNS Zone
+# Contributor on just the target zone.
+module "cert_manager_workload_identity" {
   count = local.use_letsencrypt_dns01 ? 1 : 0
 
-  metadata {
-    name      = local.cert_manager_route53_secret
-    namespace = kubernetes_namespace.cert_manager[0].metadata[0].name
-  }
+  source = "./modules/workload-identity"
 
-  type = "Opaque"
+  name                 = "${local.name_prefix}-cert-manager"
+  resource_group_name  = local.resource_group_name
+  location             = var.location
+  oidc_issuer_url      = module.aks.oidc_issuer_url
+  namespace            = local.cert_manager_namespace
+  service_account_name = local.cert_manager_sa_name
+  tags                 = local.resource_tags
+}
 
-  data = {
-    (local.cert_manager_route53_key_name) = var.letsencrypt_dns01_route53.aws_secret_access_key
-  }
+data "azurerm_dns_zone" "letsencrypt_dns01" {
+  count = local.use_letsencrypt_dns01 ? 1 : 0
 
-  depends_on = [helm_release.cert_manager]
+  name                = var.letsencrypt_dns01_azure_dns.zone_name
+  resource_group_name = var.letsencrypt_dns01_azure_dns.zone_resource_group_name
+}
+
+resource "azurerm_role_assignment" "cert_manager_dns_contributor" {
+  count = local.use_letsencrypt_dns01 ? 1 : 0
+
+  scope                = data.azurerm_dns_zone.letsencrypt_dns01[0].id
+  role_definition_name = "DNS Zone Contributor"
+  principal_id         = module.cert_manager_workload_identity[0].principal_id
+}
+
+resource "time_sleep" "wait_for_cert_manager_role_propagation" {
+  count = local.use_letsencrypt_dns01 ? 1 : 0
+
+  depends_on      = [azurerm_role_assignment.cert_manager_dns_contributor]
+  create_duration = "60s"
 }
 
 resource "helm_release" "letsencrypt_issuer" {
@@ -382,31 +430,28 @@ resource "helm_release" "letsencrypt_issuer" {
     value = "nginx"
   }
 
-  # DNS-01 (Route53) solver — engaged when letsencrypt_dns01_route53 is
-  # supplied. Required for wildcard ingress hosts.
+  # DNS-01 (azureDNS) solver — engaged when letsencrypt_dns01_azure_dns is
+  # supplied. Required for wildcard ingress hosts. Auth is via the workload
+  # identity created above; no static credentials are referenced here.
   set {
     name  = "issuer.dns01.enabled"
     value = local.use_letsencrypt_dns01 ? "true" : "false"
   }
   set {
-    name  = "issuer.dns01.route53.region"
-    value = local.use_letsencrypt_dns01 ? var.letsencrypt_dns01_route53.region : ""
+    name  = "issuer.dns01.azureDNS.subscriptionID"
+    value = local.use_letsencrypt_dns01 ? data.azurerm_client_config.current.subscription_id : ""
   }
   set {
-    name  = "issuer.dns01.route53.hostedZoneID"
-    value = local.use_letsencrypt_dns01 ? coalesce(var.letsencrypt_dns01_route53.hosted_zone_id, "") : ""
+    name  = "issuer.dns01.azureDNS.resourceGroupName"
+    value = local.use_letsencrypt_dns01 ? var.letsencrypt_dns01_azure_dns.zone_resource_group_name : ""
   }
   set {
-    name  = "issuer.dns01.route53.accessKeyID"
-    value = local.use_letsencrypt_dns01 ? var.letsencrypt_dns01_route53.aws_access_key_id : ""
+    name  = "issuer.dns01.azureDNS.hostedZoneName"
+    value = local.use_letsencrypt_dns01 ? var.letsencrypt_dns01_azure_dns.zone_name : ""
   }
   set {
-    name  = "issuer.dns01.route53.secretAccessKeySecretRef.name"
-    value = local.use_letsencrypt_dns01 ? local.cert_manager_route53_secret : ""
-  }
-  set {
-    name  = "issuer.dns01.route53.secretAccessKeySecretRef.key"
-    value = local.use_letsencrypt_dns01 ? local.cert_manager_route53_key_name : ""
+    name  = "issuer.dns01.azureDNS.managedIdentityClientID"
+    value = local.use_letsencrypt_dns01 ? module.cert_manager_workload_identity[0].client_id : ""
   }
 
   lifecycle {
@@ -415,15 +460,15 @@ resource "helm_release" "letsencrypt_issuer" {
         !var.ingress_config.enable_ingress ||
         try(var.ingress_config.letsencrypt_email, null) == null ||
         !startswith(try(var.ingress_config.ingress_host, ""), "*.") ||
-        var.letsencrypt_dns01_route53 != null
+        var.letsencrypt_dns01_azure_dns != null
       )
-      error_message = "Wildcard ingress_host (e.g. *.example.com) requires letsencrypt_dns01_route53 to be set, because Let's Encrypt only issues wildcard certs via DNS-01."
+      error_message = "Wildcard ingress_host (e.g. *.example.com) requires letsencrypt_dns01_azure_dns to be set, because Let's Encrypt only issues wildcard certs via DNS-01."
     }
   }
 
   depends_on = [
     time_sleep.wait_for_cert_manager_crds,
-    kubernetes_secret_v1.cert_manager_route53,
+    time_sleep.wait_for_cert_manager_role_propagation,
   ]
 }
 
