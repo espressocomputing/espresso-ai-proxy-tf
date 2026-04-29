@@ -254,6 +254,20 @@ resource "helm_release" "ingress_nginx" {
     type  = "string"
   }
 
+  # AFD connects to the origin IP. Without an SNI match, ingress-nginx presents
+  # its generated self-signed default certificate, which AFD rejects even when
+  # certificate subject-name checking is disabled. Use the proxy TLS secret as
+  # nginx's default certificate so the origin still presents a trusted chain.
+  dynamic "set" {
+    for_each = local.proxy_tls_secret_name == null ? [] : [local.proxy_tls_secret_name]
+    iterator = default_tls_secret
+
+    content {
+      name  = "controller.extraArgs.default-ssl-certificate"
+      value = "${local.proxy_namespace}/${default_tls_secret.value}"
+    }
+  }
+
   depends_on = [
     azurerm_public_ip.ingress,
     module.aks,
