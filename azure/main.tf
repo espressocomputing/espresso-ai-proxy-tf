@@ -731,6 +731,26 @@ resource "kubernetes_ingress_v1" "proxy" {
         }
       }
     }
+
+    # AFD health probes do not arrive with a customer wildcard Host header.
+    # Keep a hostless probe route so the origin group can mark the AKS origin
+    # healthy while the customer-facing wildcard rule still handles traffic.
+    rule {
+      http {
+        path {
+          path      = "/healthcheck"
+          path_type = "Exact"
+          backend {
+            service {
+              name = module.proxy.proxy_service_name
+              port {
+                number = module.proxy.proxy_service_port
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   depends_on = [

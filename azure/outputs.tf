@@ -66,9 +66,29 @@ output "proxy_api_key_key_vault_name" {
 output "front_door_endpoint_hostname" {
   description = "Default AFD endpoint hostname (<name>.<region>.azurefd.net). Point a CNAME from your custom domain at this. Only set when ingress_config.front_door.enabled is true."
   value       = try(module.front_door[0].endpoint_hostname, null)
+
+  # Resources that consume this output usually publish the public CNAME.
+  # Ensure that DNS traffic is not cut over before the AFD route/domain
+  # association exists inside the child module.
+  depends_on = [module.front_door]
 }
 
 output "front_door_custom_domain_validation_token" {
   description = "Validation token for the AFD custom domain. Publish a TXT record at _dnsauth.<ingress_host> with this value before AFD will issue the managed cert. Only set when ingress_config.front_door.enabled is true."
   value       = try(module.front_door[0].custom_domain_validation_token, null)
+}
+
+output "front_door_route_id" {
+  description = "AFD route resource ID. Only set when ingress_config.front_door.enabled is true."
+  value       = try(module.front_door[0].route_id, null)
+}
+
+output "front_door_custom_domain_id" {
+  description = "AFD custom domain resource ID. Only set when ingress_config.front_door.enabled is true."
+  value       = try(module.front_door[0].custom_domain_id, null)
+}
+
+output "front_door_custom_domain_association_id" {
+  description = "AFD custom domain association resource ID. Only set when ingress_config.front_door.enabled is true."
+  value       = try(module.front_door[0].custom_domain_association_id, null)
 }

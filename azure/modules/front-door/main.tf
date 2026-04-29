@@ -85,3 +85,8 @@ resource "azurerm_cdn_frontdoor_route" "this" {
 
   cdn_frontdoor_custom_domain_ids = [azurerm_cdn_frontdoor_custom_domain.this.id]
 }
+
+resource "azurerm_cdn_frontdoor_custom_domain_association" "this" {
+  cdn_frontdoor_custom_domain_id = azurerm_cdn_frontdoor_custom_domain.this.id
+  cdn_frontdoor_route_ids        = [azurerm_cdn_frontdoor_route.this.id]
+}
