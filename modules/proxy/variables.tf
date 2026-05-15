@@ -1,6 +1,11 @@
 variable "proxy_image" {
   description = "Proxy container image"
   type        = string
+
+  validation {
+    condition     = trim(var.proxy_image, " ") != ""
+    error_message = "proxy_image must be a non-empty container image reference."
+  }
 }
 
 variable "proxy_replicas" {

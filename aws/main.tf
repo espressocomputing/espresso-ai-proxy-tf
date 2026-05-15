@@ -356,7 +356,7 @@ resource "time_sleep" "wait_for_proxy_api_key_sync" {
 module "proxy" {
   source = "../modules/proxy"
 
-  proxy_image               = var.proxy_config.image
+  proxy_image               = "${var.proxy_config.repository}:${var.proxy_config.tag}"
   proxy_replicas            = var.proxy_config.replicas
   proxy_port                = 5050
   proxy_api_key_secret_name = var.proxy_config.api_key_secret_name

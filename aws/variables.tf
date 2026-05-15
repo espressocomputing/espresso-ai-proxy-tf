@@ -203,7 +203,8 @@ variable "karpenter_config" {
 variable "proxy_config" {
   description = "Proxy application runtime configuration"
   type = object({
-    image                       = string
+    repository                  = string
+    tag                         = string
     replicas                    = optional(number, 2)
     proxy_host                  = string
     otel_exporter_otlp_endpoint = optional(string, "https://metrics.espressocomputing.com:443")
@@ -213,6 +214,16 @@ variable "proxy_config" {
     api_url                     = optional(string, "https://api.espressocomputing.com:25831")
     env_vars                    = optional(map(string), {})
   })
+
+  validation {
+    condition     = trim(var.proxy_config.repository, " ") != ""
+    error_message = "proxy_config.repository must be set to a non-empty value."
+  }
+
+  validation {
+    condition     = trim(var.proxy_config.tag, " ") != ""
+    error_message = "proxy_config.tag must be set to a non-empty value."
+  }
 
   validation {
     condition = (
