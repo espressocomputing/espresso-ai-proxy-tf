@@ -1,0 +1,42 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+processors:
+  batch: {}
+exporters:
+  otlphttp/espresso:
+    endpoint: "${espresso_endpoint}"
+    sending_queue:
+      enabled: true
+    retry_on_failure:
+      enabled: true
+%{ if customer_enabled ~}
+  ${customer_exporter_key}:
+    endpoint: "${customer_endpoint}"
+%{ if customer_auth ~}
+    headers:
+      authorization: $${env:CUSTOMER_OTLP_AUTH}
+%{ endif ~}
+    tls:
+      insecure: ${customer_tls_insecure}
+    sending_queue:
+      enabled: true
+    retry_on_failure:
+      enabled: true
+%{ endif ~}
+service:
+  pipelines:
+%{ for signal in ["traces", "metrics", "logs"] ~}
+    ${signal}:
+      receivers: [otlp]
+      processors: [batch]
+      exporters:
+      - otlphttp/espresso
+%{ if customer_enabled && contains(customer_signals, signal) ~}
+      - ${customer_exporter_key}
+%{ endif ~}
+%{ endfor ~}
