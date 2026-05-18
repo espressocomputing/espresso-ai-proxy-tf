@@ -150,6 +150,7 @@ variable "proxy_config" {
     otel_collector = optional(object({
       enabled                   = optional(bool, true)
       image                     = optional(string, "otel/opentelemetry-collector-contrib:0.103.0")
+      espresso_enabled          = optional(bool, true)
       customer_endpoint         = optional(string, "")
       customer_protocol         = optional(string, "grpc")
       customer_signals          = optional(list(string), ["traces", "metrics", "logs"])

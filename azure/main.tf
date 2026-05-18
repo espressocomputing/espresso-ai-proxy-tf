@@ -733,6 +733,7 @@ module "proxy" {
   otel_collector = {
     enabled                   = var.proxy_config.otel_collector.enabled
     image                     = var.proxy_config.otel_collector.image
+    espresso_enabled          = var.proxy_config.otel_collector.espresso_enabled
     espresso_endpoint         = var.proxy_config.otel_exporter_otlp_endpoint
     customer_endpoint         = var.proxy_config.otel_collector.customer_endpoint
     customer_protocol         = var.proxy_config.otel_collector.customer_protocol
