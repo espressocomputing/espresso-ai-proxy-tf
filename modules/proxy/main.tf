@@ -2,20 +2,17 @@ locals {
   proxy_namespace = "proxy"
 
   otel_collector_enabled     = var.otel_collector.enabled
-  otel_espresso_enabled      = local.otel_collector_enabled && var.otel_collector.espresso_enabled
   otel_customer_enabled      = local.otel_collector_enabled && var.otel_collector.customer_endpoint != ""
   otel_customer_exporter_key = var.otel_collector.customer_protocol == "http" ? "otlphttp/customer" : "otlp/customer"
 
   otel_collector_config = local.otel_collector_enabled ? templatefile("${path.module}/files/otel-collector-config.yaml.tftpl", {
-    espresso_enabled              = local.otel_espresso_enabled
-    espresso_endpoint             = var.otel_collector.espresso_endpoint
-    customer_enabled              = local.otel_customer_enabled
-    customer_endpoint             = var.otel_collector.customer_endpoint
-    customer_auth                 = var.otel_collector.customer_auth_secret_name != ""
-    customer_use_espresso_api_key = var.otel_collector.customer_use_espresso_api_key
-    customer_tls_insecure         = var.otel_collector.customer_tls_insecure
-    customer_signals              = var.otel_collector.customer_signals
-    customer_exporter_key         = local.otel_customer_exporter_key
+    espresso_endpoint     = var.otel_collector.espresso_endpoint
+    customer_enabled      = local.otel_customer_enabled
+    customer_endpoint     = var.otel_collector.customer_endpoint
+    customer_auth         = var.otel_collector.customer_auth_secret_name != ""
+    customer_tls_insecure = var.otel_collector.customer_tls_insecure
+    customer_signals      = var.otel_collector.customer_signals
+    customer_exporter_key = local.otel_customer_exporter_key
   }) : ""
 }
 

@@ -50,20 +50,18 @@ variable "proxy_autoscaling_target_cpu_utilization" {
 }
 
 variable "otel_collector" {
-  description = "OTEL collector sidecar configuration. When enabled, deploys a sidecar that receives OTLP from the proxy on localhost and fans out to the Espresso ingress and/or a customer endpoint."
+  description = "OTEL collector sidecar configuration. When enabled, deploys a sidecar that receives OTLP from the proxy on localhost and fans out to the Espresso ingress and an optional customer endpoint."
   type = object({
     enabled                   = optional(bool, false)
     image                     = optional(string, "otel/opentelemetry-collector-contrib:0.103.0")
     image_pull_policy         = optional(string, "IfNotPresent")
-    espresso_enabled          = optional(bool, true)
     espresso_endpoint         = optional(string, "https://metrics.espressocomputing.com:443")
-    customer_endpoint             = optional(string, "")
-    customer_protocol             = optional(string, "grpc")
-    customer_signals              = optional(list(string), ["traces", "metrics", "logs"])
-    customer_auth_secret_name     = optional(string, "")
-    customer_auth_secret_key      = optional(string, "authorization")
-    customer_use_espresso_api_key = optional(bool, false)
-    customer_tls_insecure         = optional(bool, false)
+    customer_endpoint         = optional(string, "")
+    customer_protocol         = optional(string, "grpc")
+    customer_signals          = optional(list(string), ["traces", "metrics", "logs"])
+    customer_auth_secret_name = optional(string, "")
+    customer_auth_secret_key  = optional(string, "authorization")
+    customer_tls_insecure     = optional(bool, false)
     resources = optional(object({
       requests = optional(object({
         cpu    = optional(string, "50m")
@@ -90,12 +88,7 @@ variable "otel_collector" {
   }
 
   validation {
-    condition = !var.otel_collector.espresso_enabled || trim(var.otel_collector.espresso_endpoint, " ") != ""
-    error_message = "otel_collector.espresso_endpoint must be non-empty when otel_collector.espresso_enabled is true."
-  }
-
-  validation {
-    condition = !var.otel_collector.enabled || var.otel_collector.espresso_enabled || (var.otel_collector.customer_endpoint != "" && length(var.otel_collector.customer_signals) > 0)
-    error_message = "otel_collector requires at least one exporter and pipeline: enable espresso_enabled, or set customer_endpoint with non-empty customer_signals."
+    condition = !var.otel_collector.enabled || trim(var.otel_collector.espresso_endpoint, " ") != ""
+    error_message = "otel_collector.espresso_endpoint must be non-empty when otel_collector.enabled is true."
   }
 }

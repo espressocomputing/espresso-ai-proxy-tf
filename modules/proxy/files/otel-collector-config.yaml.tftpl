@@ -8,7 +8,6 @@ receivers:
 processors:
   batch: {}
 exporters:
-%{ if espresso_enabled ~}
   otlphttp/espresso:
     endpoint: "${espresso_endpoint}"
     headers:
@@ -17,18 +16,12 @@ exporters:
       enabled: true
     retry_on_failure:
       enabled: true
-%{ endif ~}
 %{ if customer_enabled ~}
   ${customer_exporter_key}:
     endpoint: "${customer_endpoint}"
-%{ if customer_use_espresso_api_key ~}
-    headers:
-      x-api-key: $${env:ESPRESSO_AI_API_KEY}
-%{ else ~}
 %{ if customer_auth ~}
     headers:
       authorization: $${env:CUSTOMER_OTLP_AUTH}
-%{ endif ~}
 %{ endif ~}
     tls:
       insecure: ${customer_tls_insecure}
@@ -40,16 +33,12 @@ exporters:
 service:
   pipelines:
 %{ for signal in ["traces", "metrics", "logs"] ~}
-%{ if espresso_enabled || (customer_enabled && contains(customer_signals, signal)) ~}
     ${signal}:
       receivers: [otlp]
       processors: [batch]
       exporters:
-%{ if espresso_enabled ~}
       - otlphttp/espresso
-%{ endif ~}
 %{ if customer_enabled && contains(customer_signals, signal) ~}
       - ${customer_exporter_key}
-%{ endif ~}
 %{ endif ~}
 %{ endfor ~}
