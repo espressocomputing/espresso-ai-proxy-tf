@@ -365,10 +365,22 @@ module "proxy" {
     var.proxy_config.env_vars,
     {
       PROXY_HOST                  = var.proxy_config.proxy_host
-      OTEL_EXPORTER_OTLP_ENDPOINT = var.proxy_config.otel_exporter_otlp_endpoint
+      OTEL_EXPORTER_OTLP_ENDPOINT = var.proxy_config.otel_collector.enabled ? "http://localhost:4318" : var.proxy_config.otel_exporter_otlp_endpoint
       API_URL                     = "${var.proxy_config.api_url}/${var.customer}"
     }
   )
+
+  otel_collector = {
+    enabled                   = var.proxy_config.otel_collector.enabled
+    image                     = var.proxy_config.otel_collector.image
+    espresso_endpoint         = var.proxy_config.otel_exporter_otlp_endpoint
+    customer_endpoint         = var.proxy_config.otel_collector.customer_endpoint
+    customer_protocol         = var.proxy_config.otel_collector.customer_protocol
+    customer_signals          = var.proxy_config.otel_collector.customer_signals
+    customer_auth_secret_name = var.proxy_config.otel_collector.customer_auth_secret_name
+    customer_auth_secret_key  = var.proxy_config.otel_collector.customer_auth_secret_key
+    customer_tls_insecure     = var.proxy_config.otel_collector.customer_tls_insecure
+  }
 
   enable_proxy_autoscaling                 = true
   proxy_autoscaling_min_replicas           = var.autoscaling_config.min_replicas

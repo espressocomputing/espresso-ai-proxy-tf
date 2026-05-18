@@ -142,11 +142,21 @@ variable "aks_config" {
 variable "proxy_config" {
   description = "Proxy application runtime configuration"
   type = object({
-    repository                     = string
-    tag                            = string
-    replicas                       = optional(number, 2)
-    proxy_host                     = string
-    otel_exporter_otlp_endpoint    = optional(string, "https://metrics.espressocomputing.com:443")
+    repository                  = string
+    tag                         = string
+    replicas                    = optional(number, 2)
+    proxy_host                  = string
+    otel_exporter_otlp_endpoint = optional(string, "https://metrics.espressocomputing.com:443")
+    otel_collector = optional(object({
+      enabled                   = optional(bool, true)
+      image                     = optional(string, "otel/opentelemetry-collector-contrib:0.152.0")
+      customer_endpoint         = optional(string, "")
+      customer_protocol         = optional(string, "grpc")
+      customer_signals          = optional(list(string), ["traces", "metrics", "logs"])
+      customer_auth_secret_name = optional(string, "")
+      customer_auth_secret_key  = optional(string, "authorization")
+      customer_tls_insecure     = optional(bool, false)
+    }), {})
     api_key_secret_name            = optional(string, "espresso-ai")
     api_key_secret_mode            = optional(string, "BYO_K8S_SECRET")
     api_key_azure_key_vault_secret = optional(string, "espresso-ai-proxy-api-key")
