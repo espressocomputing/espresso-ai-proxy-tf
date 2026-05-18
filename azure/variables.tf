@@ -149,7 +149,7 @@ variable "proxy_config" {
     otel_exporter_otlp_endpoint = optional(string, "https://metrics.espressocomputing.com:443")
     otel_collector = optional(object({
       enabled                   = optional(bool, true)
-      image                     = optional(string, "otel/opentelemetry-collector-contrib:0.103.0")
+      image                     = optional(string, "otel/opentelemetry-collector-contrib:0.152.0")
       customer_endpoint         = optional(string, "")
       customer_protocol         = optional(string, "grpc")
       customer_signals          = optional(list(string), ["traces", "metrics", "logs"])

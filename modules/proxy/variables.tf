@@ -53,7 +53,7 @@ variable "otel_collector" {
   description = "OTEL collector sidecar configuration. When enabled, deploys a sidecar that receives OTLP from the proxy on localhost and fans out to the Espresso ingress and an optional customer endpoint."
   type = object({
     enabled                   = optional(bool, false)
-    image                     = optional(string, "otel/opentelemetry-collector-contrib:0.103.0")
+    image                     = optional(string, "otel/opentelemetry-collector-contrib:0.152.0")
     image_pull_policy         = optional(string, "IfNotPresent")
     espresso_endpoint         = optional(string, "https://metrics.espressocomputing.com:443")
     customer_endpoint         = optional(string, "")
@@ -76,7 +76,7 @@ variable "otel_collector" {
   default = {}
 
   validation {
-    condition = contains(["grpc", "http"], var.otel_collector.customer_protocol)
+    condition     = contains(["grpc", "http"], var.otel_collector.customer_protocol)
     error_message = "otel_collector.customer_protocol must be grpc or http."
   }
 
@@ -88,7 +88,7 @@ variable "otel_collector" {
   }
 
   validation {
-    condition = !var.otel_collector.enabled || trim(var.otel_collector.espresso_endpoint, " ") != ""
+    condition     = !var.otel_collector.enabled || trim(var.otel_collector.espresso_endpoint, " ") != ""
     error_message = "otel_collector.espresso_endpoint must be non-empty when otel_collector.enabled is true."
   }
 }
