@@ -11,6 +11,8 @@ exporters:
 %{ if espresso_enabled ~}
   otlphttp/espresso:
     endpoint: "${espresso_endpoint}"
+    headers:
+      x-api-key: $${env:ESPRESSO_AI_API_KEY}
     sending_queue:
       enabled: true
     retry_on_failure:
@@ -19,9 +21,14 @@ exporters:
 %{ if customer_enabled ~}
   ${customer_exporter_key}:
     endpoint: "${customer_endpoint}"
+%{ if customer_use_espresso_api_key ~}
+    headers:
+      x-api-key: $${env:ESPRESSO_AI_API_KEY}
+%{ else ~}
 %{ if customer_auth ~}
     headers:
       authorization: $${env:CUSTOMER_OTLP_AUTH}
+%{ endif ~}
 %{ endif ~}
     tls:
       insecure: ${customer_tls_insecure}

@@ -375,12 +375,13 @@ module "proxy" {
     image                     = var.proxy_config.otel_collector.image
     espresso_enabled          = var.proxy_config.otel_collector.espresso_enabled
     espresso_endpoint         = var.proxy_config.otel_exporter_otlp_endpoint
-    customer_endpoint         = var.proxy_config.otel_collector.customer_endpoint
-    customer_protocol         = var.proxy_config.otel_collector.customer_protocol
-    customer_signals          = var.proxy_config.otel_collector.customer_signals
-    customer_auth_secret_name = var.proxy_config.otel_collector.customer_auth_secret_name
-    customer_auth_secret_key  = var.proxy_config.otel_collector.customer_auth_secret_key
-    customer_tls_insecure     = var.proxy_config.otel_collector.customer_tls_insecure
+    customer_endpoint             = var.proxy_config.otel_collector.customer_endpoint
+    customer_protocol             = var.proxy_config.otel_collector.customer_protocol
+    customer_signals              = var.proxy_config.otel_collector.customer_signals
+    customer_auth_secret_name     = var.proxy_config.otel_collector.customer_auth_secret_name
+    customer_auth_secret_key      = var.proxy_config.otel_collector.customer_auth_secret_key
+    customer_use_espresso_api_key = var.proxy_config.otel_collector.customer_use_espresso_api_key
+    customer_tls_insecure         = var.proxy_config.otel_collector.customer_tls_insecure
   }
 
   enable_proxy_autoscaling                 = true

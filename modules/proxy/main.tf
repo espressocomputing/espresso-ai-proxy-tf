@@ -7,14 +7,15 @@ locals {
   otel_customer_exporter_key = var.otel_collector.customer_protocol == "http" ? "otlphttp/customer" : "otlp/customer"
 
   otel_collector_config = local.otel_collector_enabled ? templatefile("${path.module}/files/otel-collector-config.yaml.tftpl", {
-    espresso_enabled      = local.otel_espresso_enabled
-    espresso_endpoint     = var.otel_collector.espresso_endpoint
-    customer_enabled      = local.otel_customer_enabled
-    customer_endpoint     = var.otel_collector.customer_endpoint
-    customer_auth         = var.otel_collector.customer_auth_secret_name != ""
-    customer_tls_insecure = var.otel_collector.customer_tls_insecure
-    customer_signals      = var.otel_collector.customer_signals
-    customer_exporter_key = local.otel_customer_exporter_key
+    espresso_enabled              = local.otel_espresso_enabled
+    espresso_endpoint             = var.otel_collector.espresso_endpoint
+    customer_enabled              = local.otel_customer_enabled
+    customer_endpoint             = var.otel_collector.customer_endpoint
+    customer_auth                 = var.otel_collector.customer_auth_secret_name != ""
+    customer_use_espresso_api_key = var.otel_collector.customer_use_espresso_api_key
+    customer_tls_insecure         = var.otel_collector.customer_tls_insecure
+    customer_signals              = var.otel_collector.customer_signals
+    customer_exporter_key         = local.otel_customer_exporter_key
   }) : ""
 }
 
@@ -142,6 +143,19 @@ resource "kubernetes_deployment_v1" "this" {
               name           = "otlp-http"
               container_port = 4318
               protocol       = "TCP"
+            }
+
+            dynamic "env" {
+              for_each = var.proxy_api_key_secret_name == null ? [] : [1]
+              content {
+                name = "ESPRESSO_AI_API_KEY"
+                value_from {
+                  secret_key_ref {
+                    name = var.proxy_api_key_secret_name
+                    key  = "ESPRESSO_AI_API_KEY"
+                  }
+                }
+              }
             }
 
             dynamic "env" {
