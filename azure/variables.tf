@@ -152,7 +152,7 @@ variable "proxy_config" {
       image                     = optional(string, "otel/opentelemetry-collector-contrib:0.152.0")
       customer_endpoint         = optional(string, "")
       customer_protocol         = optional(string, "grpc")
-      customer_signals          = optional(list(string), ["traces", "metrics", "logs"])
+      customer_signals          = optional(list(string), ["metrics", "logs"])
       customer_auth_secret_name = optional(string, "")
       customer_auth_secret_key  = optional(string, "authorization")
       customer_tls_insecure     = optional(bool, false)

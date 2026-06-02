@@ -32,7 +32,7 @@ exporters:
 %{ endif ~}
 service:
   pipelines:
-%{ for signal in ["traces", "metrics", "logs"] ~}
+%{ for signal in ["metrics", "logs"] ~}
     ${signal}:
       receivers: [otlp]
       processors: [batch]

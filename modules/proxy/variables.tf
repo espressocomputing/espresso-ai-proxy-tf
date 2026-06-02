@@ -58,7 +58,7 @@ variable "otel_collector" {
     espresso_endpoint         = optional(string, "https://metrics.espressocomputing.com:443")
     customer_endpoint         = optional(string, "")
     customer_protocol         = optional(string, "grpc")
-    customer_signals          = optional(list(string), ["traces", "metrics", "logs"])
+    customer_signals          = optional(list(string), ["metrics", "logs"])
     customer_auth_secret_name = optional(string, "")
     customer_auth_secret_key  = optional(string, "authorization")
     customer_tls_insecure     = optional(bool, false)
@@ -82,9 +82,9 @@ variable "otel_collector" {
 
   validation {
     condition = alltrue([
-      for s in var.otel_collector.customer_signals : contains(["traces", "metrics", "logs"], s)
+      for s in var.otel_collector.customer_signals : contains(["metrics", "logs"], s)
     ])
-    error_message = "otel_collector.customer_signals values must be one of traces, metrics, logs."
+    error_message = "otel_collector.customer_signals values must be one of metrics, logs."
   }
 
   validation {
