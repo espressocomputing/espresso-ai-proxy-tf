@@ -1,6 +1,14 @@
 locals {
   proxy_namespace = "proxy"
 
+  proxy_image_version = (
+    length(regexall("@", var.proxy_image)) > 0
+    ? reverse(split("@", var.proxy_image))[0]
+    : reverse(split(":", var.proxy_image))[0]
+  )
+
+  module_version = "0.4.3"
+
   otel_collector_enabled     = var.otel_collector.enabled
   otel_customer_enabled      = local.otel_collector_enabled && var.otel_collector.customer_endpoint != ""
   otel_customer_exporter_key = var.otel_collector.customer_protocol == "http" ? "otlphttp/customer" : "otlp/customer"
@@ -102,11 +110,21 @@ resource "kubernetes_deployment_v1" "this" {
           }
 
           dynamic "env" {
-            for_each = var.proxy_env
+            for_each = { for k, v in var.proxy_env : k => v if !contains(["SERVICE_VERSION", "TF_VERSION"], k) }
             content {
               name  = env.key
               value = env.value
             }
+          }
+
+          env {
+            name  = "SERVICE_VERSION"
+            value = local.proxy_image_version
+          }
+
+          env {
+            name  = "TF_VERSION"
+            value = local.module_version
           }
 
           dynamic "env" {
