@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2]
+
+### Fixed
+
+- Restore the `traces` pipeline so spans are exported to the espresso endpoint. The
+  0.4.1 change dropped traces from all pipelines, which stopped span export to espresso
+  (causing "Failed to export span batch" errors in the proxy) rather than only excluding
+  traces from the customer endpoint. The customer endpoint never received traces anyway,
+  since `customer_signals` is validated to allow only `metrics` and `logs`.
+
 ## [0.4.1]
 
 ### Changed
