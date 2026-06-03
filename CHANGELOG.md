@@ -10,10 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Restore the `traces` pipeline so spans are exported to the espresso endpoint. The
-  0.4.1 change dropped traces from all pipelines, which stopped span export to espresso
-  (causing "Failed to export span batch" errors in the proxy) rather than only excluding
-  traces from the customer endpoint. The customer endpoint never received traces anyway,
-  since `customer_signals` is validated to allow only `metrics` and `logs`.
+  0.4.1 change dropped traces from all pipelines, which stopped span export to Espresso AI
+  rather than only excluding traces from the customer endpoint. The customer endpoint was 
+  already limited `metrics` and `logs`.
 
 ## [0.4.1]
 
